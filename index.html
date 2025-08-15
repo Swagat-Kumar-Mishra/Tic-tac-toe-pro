@@ -108,7 +108,8 @@
         .item-card { background: var(--cell-bg); border-radius: 15px; padding: 10px; cursor: pointer; border: 2px solid transparent; transition: all 0.3s ease; position: relative; display: flex; justify-content: center; align-items: center; aspect-ratio: 1 / 1; font-size: 40px; }
         .item-card:hover { background: var(--cell-hover-bg); transform: scale(1.05); }
         .item-card.selected { border-color: var(--accent-color); box-shadow: 0 0 15px var(--glow-color); }
-        .item-card.unlocked { opacity: 0.5; background: #000; cursor: not-allowed; }
+        .item-card.unlocked { opacity: 0.5; background: #000; cursor: default; }
+        .item-card.unlocked:hover { background: #000; transform: scale(1); } /* Prevent hover effect on unlocked items */
         .item-card .price { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); background: var(--o-color); color: #000; font-weight: bold; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; }
         .item-card .price i { font-size: 0.7rem; }
         .profile-avatar-preview { width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 15px; background-size: cover; border: 4px solid var(--accent-color); box-shadow: 0 0 20px var(--glow-color); display: flex; justify-content: center; align-items: center; font-size: 50px; }
@@ -256,35 +257,87 @@
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
       import { getDatabase, ref, set, onValue, get, onDisconnect, off, update } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
-      // Import Firebase Auth for secure user identification
       import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-auth.js";
 
       // --- Firebase Config and Initialization ---
-      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      // IMPORTANT: Replace the placeholder values below with your own Firebase project configuration.
+      // You can get this from your Firebase project settings under "Project settings" > "General".
       const firebaseConfig = {
-        apiKey: "",
-        authDomain: "",
-        databaseURL: "",
-        projectId: "",
-        storageBucket: "",
-        messagingSenderId: "",
-        appId: "",
-        measurementId: ""
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
       };
-      const app = initializeApp(firebaseConfig);
-      const database = getDatabase(app);
-      const auth = getAuth(app); // Initialize Auth
-      
-      // Pass auth instance and Firebase functions to the game logic
-      window.ticTacToeGame(database, auth, { 
-          ref, set, onValue, get, onDisconnect, off, update,
-          onAuthStateChanged, signInAnonymously
-      });
+
+      // Initialize Firebase and start the game
+      try {
+          const app = initializeApp(firebaseConfig);
+          const database = getDatabase(app);
+          const auth = getAuth(app);
+          
+          // Pass auth instance and Firebase functions to the game logic
+          window.ticTacToeGame(database, auth, { 
+              ref, set, onValue, get, onDisconnect, off, update,
+              onAuthStateChanged, signInAnonymously
+          });
+      } catch (e) {
+          console.error("Firebase initialization failed. Please check your firebaseConfig.", e);
+          // Notify user that online features are disabled if config is missing or invalid.
+          const onlineBtn = document.getElementById('online-multiplayer-btn');
+          const networkStatus = document.getElementById('network-status');
+          if (onlineBtn) onlineBtn.disabled = true;
+          if (networkStatus) {
+              networkStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Online features disabled: Firebase config missing or invalid.';
+              networkStatus.classList.add('visible');
+          }
+      }
     </script>
     
     <script>
-    const canvas = document.getElementById('starfield-canvas'); const ctx = canvas.getContext('2d'); function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } window.addEventListener('resize', resizeCanvas); resizeCanvas(); const stars = []; const numStars = 300; for (let i = 0; i < numStars; i++) { stars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: Math.random() * 1.5 + 0.5, alpha: Math.random(), vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2 }); } function animateStars() { ctx.clearRect(0, 0, canvas.width, canvas.height); stars.forEach(star => { star.x += star.vx; star.y += star.vy; if (star.x < 0 || star.x > canvas.width) star.vx *= -1; if (star.y < 0 || star.y > canvas.height) star.vy *= -1; ctx.beginPath(); ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2); ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`; ctx.fill(); }); requestAnimationFrame(animateStars); } animateStars();
+    // --- Starfield Background Animation ---
+    const canvas = document.getElementById('starfield-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const stars = [];
+    const numStars = 300;
+    for (let i = 0; i < numStars; i++) {
+        stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            radius: Math.random() * 1.5 + 0.5,
+            alpha: Math.random(),
+            vx: (Math.random() - 0.5) * 0.2,
+            vy: (Math.random() - 0.5) * 0.2
+        });
+    }
+
+    function animateStars() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        stars.forEach(star => {
+            star.x += star.vx;
+            star.y += star.vy;
+            if (star.x < 0 || star.x > canvas.width) star.vx *= -1;
+            if (star.y < 0 || star.y > canvas.height) star.vy *= -1;
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+            ctx.fill();
+        });
+        requestAnimationFrame(animateStars);
+    }
+    animateStars();
     
+    // --- Main Game Logic ---
     window.ticTacToeGame = (database, auth, fb) => {
         // --- DATA & CONSTANTS ---
         const AVATARS = {
@@ -294,7 +347,7 @@
             'default':{content:'X',type:'text',price:0,pair:'default_o'},'default_o':{content:'O',type:'text'},'rocket':{icon:'fa-solid fa-rocket',type:'icon',price:450,pair:'planet'},'planet':{icon:'fa-solid fa-earth-americas',type:'icon'},'sword':{icon:'fa-solid fa-khanda',type:'icon',price:550,pair:'shield'},'shield':{icon:'fa-solid fa-shield-halved',type:'icon'},'sun': {icon: 'fa-solid fa-sun', type: 'icon', price: 650, pair: 'moon'},'moon': {icon: 'fa-solid fa-moon', type: 'icon'},'king': {icon: 'fa-solid fa-chess-king', type: 'icon', price: 650, pair: 'bomb'},'bomb': {icon: 'fa-solid fa-bomb', type: 'icon'},'heart': {icon: 'fa-solid fa-heart', type: 'icon', price: 700, pair: 'heart-crack'},'heart-crack': {icon: 'fa-solid fa-heart-crack', type: 'icon'},'fist': {icon: 'fa-solid fa-hand-fist', type: 'icon', price: 750, pair: 'spock'},'spock': {icon: 'fa-solid fa-hand-spock', type: 'icon'},'anchor': {icon: 'fa-solid fa-anchor', type: 'icon', price: 800, pair: 'ship'},'ship': {icon: 'fa-solid fa-ship', type: 'icon'},'feather': {icon: 'fa-solid fa-feather-pointed', type: 'icon', price: 900, pair: 'book-skull'},'book-skull': {icon: 'fa-solid fa-book-skull', type: 'icon'}
         };
         const ONLINE_GAME_COST = 20;
-        const winPatterns = [ [0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6] ];
+        const WIN_PATTERNS = [ [0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6] ];
 
         // --- DOM Elements (Cached) ---
         const ui = {
@@ -312,30 +365,165 @@
         let currentUser = null; // Holds the authenticated user object from Firebase
 
         // --- MANAGERS ---
-        const coinManager = { KEY: 'stellar-tictactoe-coins', DEFAULT_COINS: 50, init() { let c=localStorage.getItem(this.KEY); if(c===null||isNaN(parseInt(c,10))){c=this.DEFAULT_COINS;localStorage.setItem(this.KEY,c.toString());}this.updateDisplay();},get(){return parseInt(localStorage.getItem(this.KEY)||this.DEFAULT_COINS,10);},set(a){localStorage.setItem(this.KEY,a.toString());this.updateDisplay();},add(a){this.set(this.get()+a);},updateDisplay(){ui.coinCount.textContent=this.get();}};
-        const profileManager = { KEY: 'stellar-tictactoe-profile', profile: {}, init() { const s=localStorage.getItem(this.KEY);this.profile=s?JSON.parse(s):{name:'Pilot'+Math.floor(Math.random()*1000),avatar:'avatar1',markerX:'default',unlockedAvatars:['avatar1'],unlockedMarkers:['default','default_o']};this.save();},get(){return JSON.parse(JSON.stringify(this.profile));},save(){localStorage.setItem(this.KEY,JSON.stringify(this.profile));},validateName:n=>/^[a-zA-Z0-9]{3,12}$/.test(n),populateProfileMenu(){document.getElementById('username-input').value=this.profile.name;document.getElementById('profile-avatar-preview').innerHTML=`<i class="${AVATARS[this.profile.avatar].icon}"></i>`;const p=(g,i,u,s,t)=>{const gr=document.getElementById(g);gr.innerHTML='';u.forEach(id=>{const it=i[id];if(!it||id.includes('_o'))return;const c=document.createElement('div');c.className=`item-card ${s===id?'selected':''}`;c.innerHTML=it.type==='text'?`<span class="mark">${it.content}</span>`:`<i class="${it.icon}"></i>`;c.addEventListener('click',()=>{if(t==='avatar')this.profile.avatar=id;else this.profile.markerX=id;this.populateProfileMenu();});gr.appendChild(c);});};p('avatar-selection-grid',AVATARS,this.profile.unlockedAvatars,this.profile.avatar,'avatar');p('marker-selection-grid',MARKERS,this.profile.unlockedMarkers,this.profile.markerX,'marker');}};
-        const shopManager = { init(){this.populateShop();},populateShop(){const p=profileManager.get();const g=(d,m,u,t)=>{const gr=document.getElementById(d);gr.innerHTML='';Object.entries(m).forEach(([id,i])=>{if(id.includes('_o')||i.price===0)return;const isU=u.includes(id);const c=document.createElement('div');c.className=`item-card ${isU?'unlocked':''}`;c.innerHTML=i.type==='text'?`<span class="mark">${i.content}</span>`:`<i class="${i.icon}"></i>`;if(!isU){c.innerHTML+=`<div class="price"><i class="fa-solid fa-coins"></i> ${i.price}</div>`;c.addEventListener('click',()=>this.buyItem(id,t,i.price));}gr.appendChild(c);});};g('avatar-shop-grid',AVATARS,p.unlockedAvatars,'avatar');g('marker-shop-grid',MARKERS,p.unlockedMarkers,'marker');},buyItem(id,t,p){if(coinManager.get()<p)return showAlert("Not enough coins!");coinManager.add(-p);const i=(t==='avatar'?AVATARS:MARKERS)[id];profileManager.profile[t==='avatar'?'unlockedAvatars':'unlockedMarkers'].push(id);if(t==='marker'&&i.pair)profileManager.profile.unlockedMarkers.push(i.pair);profileManager.save();this.populateShop();profileManager.populateProfileMenu();showAlert("Purchase successful!");}};
+        const coinManager = {
+            KEY: 'stellar-tictactoe-coins',
+            DEFAULT_COINS: 50,
+            init() {
+                let coins = localStorage.getItem(this.KEY);
+                if (coins === null || isNaN(parseInt(coins, 10))) {
+                    coins = this.DEFAULT_COINS;
+                    localStorage.setItem(this.KEY, coins.toString());
+                }
+                this.updateDisplay();
+            },
+            get() { return parseInt(localStorage.getItem(this.KEY) || this.DEFAULT_COINS, 10); },
+            set(amount) { localStorage.setItem(this.KEY, amount.toString()); this.updateDisplay(); },
+            add(amount) { this.set(this.get() + amount); },
+            updateDisplay() { ui.coinCount.textContent = this.get(); }
+        };
+
+        const profileManager = {
+            KEY: 'stellar-tictactoe-profile',
+            profile: {},
+            init() {
+                const storedProfile = localStorage.getItem(this.KEY);
+                this.profile = storedProfile ? JSON.parse(storedProfile) : {
+                    name: 'Pilot' + Math.floor(Math.random() * 1000),
+                    avatar: 'avatar1',
+                    markerX: 'default',
+                    unlockedAvatars: ['avatar1'],
+                    unlockedMarkers: ['default', 'default_o']
+                };
+                this.save();
+            },
+            get() { return JSON.parse(JSON.stringify(this.profile)); },
+            save() { localStorage.setItem(this.KEY, JSON.stringify(this.profile)); },
+            validateName: (name) => /^[a-zA-Z0-9]{3,12}$/.test(name),
+            populateProfileMenu() {
+                document.getElementById('username-input').value = this.profile.name;
+                const preview = document.getElementById('profile-avatar-preview');
+                preview.innerHTML = `<i class="${AVATARS[this.profile.avatar].icon}"></i>`;
+                
+                this._populateSelectionGrid('avatar-selection-grid', AVATARS, this.profile.unlockedAvatars, this.profile.avatar, 'avatar');
+                this._populateSelectionGrid('marker-selection-grid', MARKERS, this.profile.unlockedMarkers, this.profile.markerX, 'marker');
+            },
+            _populateSelectionGrid(gridId, items, unlockedIds, selectedId, itemType) {
+                const gridElement = document.getElementById(gridId);
+                gridElement.innerHTML = '';
+                unlockedIds.forEach(id => {
+                    const item = items[id];
+                    if (!item || id.includes('_o')) return; // Don't show 'O' markers for selection
+                    
+                    const card = document.createElement('div');
+                    card.className = `item-card ${selectedId === id ? 'selected' : ''}`;
+                    card.innerHTML = item.type === 'text' ? `<span class="mark">${item.content}</span>` : `<i class="${item.icon}"></i>`;
+                    
+                    card.addEventListener('click', () => {
+                        if (itemType === 'avatar') this.profile.avatar = id;
+                        else this.profile.markerX = id;
+                        this.populateProfileMenu(); // Repopulate to update selection
+                    });
+                    gridElement.appendChild(card);
+                });
+            }
+        };
+
+        const shopManager = {
+            init() { this.populateShop(); },
+            populateShop() {
+                const currentProfile = profileManager.get();
+                this._populateGrid('avatar-shop-grid', AVATARS, currentProfile.unlockedAvatars, 'avatar');
+                this._populateGrid('marker-shop-grid', MARKERS, currentProfile.unlockedMarkers, 'marker');
+            },
+            _populateGrid(gridId, items, unlockedIds, itemType) {
+                const gridElement = document.getElementById(gridId);
+                gridElement.innerHTML = '';
+                Object.entries(items).forEach(([id, item]) => {
+                    if (id.includes('_o') || item.price === 0) return;
+                    
+                    const isUnlocked = unlockedIds.includes(id);
+                    const card = document.createElement('div');
+                    card.className = `item-card ${isUnlocked ? 'unlocked' : ''}`;
+                    card.innerHTML = item.type === 'text' ? `<span class="mark">${item.content}</span>` : `<i class="${item.icon}"></i>`;
+                    
+                    if (!isUnlocked) {
+                        card.innerHTML += `<div class="price"><i class="fa-solid fa-coins"></i> ${item.price}</div>`;
+                        card.addEventListener('click', () => this.buyItem(id, itemType, item.price));
+                    }
+                    gridElement.appendChild(card);
+                });
+            },
+            buyItem(itemId, itemType, price) {
+                if (coinManager.get() < price) {
+                    return showAlert("Not enough coins!");
+                }
+                coinManager.add(-price);
+                const item = (itemType === 'avatar' ? AVATARS : MARKERS)[itemId];
+                
+                if (itemType === 'avatar') {
+                    profileManager.profile.unlockedAvatars.push(itemId);
+                } else {
+                    profileManager.profile.unlockedMarkers.push(itemId);
+                    if (item.pair) profileManager.profile.unlockedMarkers.push(item.pair);
+                }
+                
+                profileManager.save();
+                this.populateShop();
+                profileManager.populateProfileMenu();
+                showAlert("Purchase successful!");
+            }
+        };
 
         // --- STATE & UI CONTROLLER ---
-        function setState(newState) { if (appState === newState) return; appState = newState; updateUI(); }
+        function setState(newState) {
+            if (appState === newState) return;
+            appState = newState;
+            updateUI();
+        }
+
         function updateUI() {
-            const screenMap = { 'MENU': ui.menus.main, 'LOBBY_PROFILE': ui.menus.profile, 'LOBBY_SHOP': ui.menus.shop, 'LOBBY_AI': ui.menus.ai, 'LOBBY_ONLINE': ui.menus.online, 'LOBBY_JOIN': ui.menus.join, 'LOBBY_WAITING': ui.menus.waiting, 'GAME_OVER': ui.menus.end, 'ALERT': ui.menus.alert };
-            const isMenuState = Object.keys(screenMap).includes(appState);
-            ui.modalHost.classList.toggle('visible', isMenuState);
+            const screenMap = {
+                'MENU': ui.menus.main, 'LOBBY_PROFILE': ui.menus.profile, 'LOBBY_SHOP': ui.menus.shop,
+                'LOBBY_AI': ui.menus.ai, 'LOBBY_ONLINE': ui.menus.online, 'LOBBY_JOIN': ui.menus.join,
+                'LOBBY_WAITING': ui.menus.waiting, 'GAME_OVER': ui.menus.end, 'ALERT': ui.menus.alert
+            };
+
+            const isModalVisible = Object.keys(screenMap).includes(appState);
+            ui.modalHost.classList.toggle('visible', isModalVisible);
             allModals.forEach(modal => modal.classList.remove('animate'));
-            if (isMenuState) {
-                const targetScreen = screenMap[appState]; const screenIndex = modalScreenElements.indexOf(targetScreen);
+
+            if (isModalVisible) {
+                const targetScreen = screenMap[appState];
+                const screenIndex = modalScreenElements.indexOf(targetScreen);
                 if (screenIndex !== -1) {
                     ui.modalSlider.style.transform = `translateX(-${screenIndex * 100}%)`;
                     const targetModal = targetScreen.querySelector('.modal');
-                    if (targetModal) requestAnimationFrame(() => targetModal.classList.add('animate'));
+                    if (targetModal) {
+                        requestAnimationFrame(() => targetModal.classList.add('animate'));
+                    }
                 }
             }
-            const isPlaying = appState === 'PLAYING'; const isAnimating = appState === 'ANIMATING_WIN';
-            ui.score.playerX.classList.toggle('active-turn', isPlaying && currentPlayer === 'X'); ui.score.playerO.classList.toggle('active-turn', isPlaying && currentPlayer === 'O');
+
+            const isPlaying = appState === 'PLAYING';
+            const isAnimating = appState === 'ANIMATING_WIN';
+            ui.score.playerX.classList.toggle('active-turn', isPlaying && currentPlayer === 'X');
+            ui.score.playerO.classList.toggle('active-turn', isPlaying && currentPlayer === 'O');
             ui.board.classList.toggle('disabled', !isPlaying || isAnimating);
+
             let statusText = '';
-            if (isPlaying) { if (gameMode === 'ai') { const isAITurn = currentPlayer === 'O'; statusText = isAITurn ? "AI is thinking..." : "Your Turn"; ui.board.classList.toggle('thinking', isAITurn); } else { statusText = currentPlayer === playerRole ? "Your Turn" : "Waiting for opponent's move..."; ui.board.classList.remove('thinking'); } } else if (appState === 'GAME_OVER' || appState === 'ANIMATING_WIN') { statusText = 'Game Over!'; ui.board.classList.remove('thinking'); }
+            if (isPlaying) {
+                if (gameMode === 'ai') {
+                    const isAITurn = currentPlayer === 'O';
+                    statusText = isAITurn ? "AI is thinking..." : "Your Turn";
+                    ui.board.classList.toggle('thinking', isAITurn);
+                } else {
+                    statusText = currentPlayer === playerRole ? "Your Turn" : "Waiting for opponent's move...";
+                    ui.board.classList.remove('thinking');
+                }
+            } else if (appState === 'GAME_OVER' || appState === 'ANIMATING_WIN') {
+                statusText = 'Game Over!';
+                ui.board.classList.remove('thinking');
+            }
             ui.statusDisplay.textContent = statusText;
         }
 
@@ -344,7 +532,7 @@
             fb.onAuthStateChanged(auth, user => {
                 if (user) {
                     currentUser = user; // Store the authenticated user
-                    ui.buttons.onlineMultiplayer.disabled = !navigator.onLine; // Enable button if online
+                    ui.buttons.onlineMultiplayer.disabled = !navigator.onLine;
                 } else {
                     fb.signInAnonymously(auth).catch(error => {
                         console.error("Anonymous sign-in failed:", error);
@@ -353,108 +541,508 @@
                 }
             });
         }
+
         function initializeGameUI() {
-            coinManager.init(); profileManager.init(); shopManager.init();
+            coinManager.init();
+            profileManager.init();
+            shopManager.init();
+            
+            // Centralized event listener for all modal buttons
             document.body.addEventListener('click', (e) => {
-                const button = e.target.closest('[data-action]'); if (!button) return; const { action } = button.dataset;
-                const actions = { 'show-profile': () => { profileManager.populateProfileMenu(); setState('LOBBY_PROFILE'); }, 'show-shop': () => { shopManager.populateShop(); setState('LOBBY_SHOP'); }, 'show-ai-menu': () => setState('LOBBY_AI'), 'show-online-menu': () => setState('LOBBY_ONLINE'), 'save-profile': () => { const n=document.getElementById('username-input').value.trim(); if(profileManager.validateName(n)){profileManager.profile.name=n;profileManager.save();setState('MENU');}else{showAlert("Username must be 3-12 alphanumeric characters.");}}, 'back-to-menu': () => setState('MENU'), 'start-ai-game': startAIGame, 'create-online-game': createOnlineGame, 'show-join-menu': () => setState('LOBBY_JOIN'), 'join-online-game': joinOnlineGame, 'reset': cleanupAndReset, 'play-again': handlePlayAgain, 'close-alert': () => setState(gameMode === 'online' ? 'LOBBY_ONLINE' : 'MENU'), };
-                if(actions[action]) actions[action]();
+                const button = e.target.closest('[data-action]');
+                if (!button) return;
+
+                const action = button.dataset.action;
+                const actions = {
+                    'show-profile': () => { profileManager.populateProfileMenu(); setState('LOBBY_PROFILE'); },
+                    'show-shop': () => { shopManager.populateShop(); setState('LOBBY_SHOP'); },
+                    'show-ai-menu': () => setState('LOBBY_AI'),
+                    'show-online-menu': () => setState('LOBBY_ONLINE'),
+                    'save-profile': () => {
+                        const newName = document.getElementById('username-input').value.trim();
+                        if (profileManager.validateName(newName)) {
+                            profileManager.profile.name = newName;
+                            profileManager.save();
+                            setState('MENU');
+                        } else {
+                            showAlert("Username must be 3-12 alphanumeric characters.");
+                        }
+                    },
+                    'back-to-menu': () => setState('MENU'),
+                    'start-ai-game': startAIGame,
+                    'create-online-game': createOnlineGame,
+                    'show-join-menu': () => setState('LOBBY_JOIN'),
+                    'join-online-game': joinOnlineGame,
+                    'reset': cleanupAndReset,
+                    'play-again': handlePlayAgain,
+                    'close-alert': () => setState(gameMode === 'online' ? 'LOBBY_ONLINE' : 'MENU'),
+                };
+                if (actions[action]) actions[action]();
             });
+
             ui.cells.forEach(cell => cell.addEventListener('click', handleCellClick));
-            document.getElementById('ai-difficulty-selector').addEventListener('click', e => { if(e.target.tagName==='BUTTON'){aiDifficulty=e.target.dataset.difficulty;document.querySelectorAll('#ai-difficulty-selector button').forEach(b=>b.classList.remove('active'));e.target.classList.add('active');}});
-            document.getElementById('shop-category-selector').addEventListener('click', e => { if(e.target.tagName!=='BUTTON')return; const c=e.target.dataset.category;document.querySelectorAll('#shop-category-selector button').forEach(b=>b.classList.remove('active'));e.target.classList.add('active');document.getElementById('avatar-shop-grid').style.display=c==='avatars'?'grid':'none';document.getElementById('marker-shop-grid').style.display=c==='markers'?'grid':'none';});
-            checkNetworkStatus(); setInterval(checkNetworkStatus, 5000);
+
+            document.getElementById('ai-difficulty-selector').addEventListener('click', e => {
+                if (e.target.tagName === 'BUTTON') {
+                    aiDifficulty = e.target.dataset.difficulty;
+                    document.querySelectorAll('#ai-difficulty-selector button').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                }
+            });
+
+            document.getElementById('shop-category-selector').addEventListener('click', e => {
+                if (e.target.tagName !== 'BUTTON') return;
+                const category = e.target.dataset.category;
+                document.querySelectorAll('#shop-category-selector button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                document.getElementById('avatar-shop-grid').style.display = category === 'avatars' ? 'grid' : 'none';
+                document.getElementById('marker-shop-grid').style.display = category === 'markers' ? 'grid' : 'none';
+            });
+            
+            checkNetworkStatus();
+            setInterval(checkNetworkStatus, 5000);
             updateUI();
         }
 
-        function showAlert(message, title = "Notification") { ui.text.alertTitle.textContent = title; ui.text.alertMessage.textContent = message; setState('ALERT'); }
-        function checkNetworkStatus() { const isOnline = navigator.onLine; ui.networkStatus.classList.toggle('visible', !isOnline); if(currentUser) ui.buttons.onlineMultiplayer.disabled = !isOnline; if (!isOnline && gameMode === 'online') { showAlert("Connection lost."); cleanupAndReset(); }}
-        function cleanupAndReset() { if (gameMode === 'online' && gameRef) { fb.set(gameRef, null).catch(() => {}); } if (gameListener) fb.off(gameRef, 'value', gameListener); gameId = null; gameRef = null; gameListener = null; playerRole = null; localScore = { X: 0, O: 0, draws: 0 }; resetBoardUI(); updateScoreboard(); setState('MENU'); }
+        function showAlert(message, title = "Notification") {
+            ui.text.alertTitle.textContent = title;
+            ui.text.alertMessage.textContent = message;
+            setState('ALERT');
+        }
+
+        function checkNetworkStatus() {
+            const isOnline = navigator.onLine;
+            ui.networkStatus.classList.toggle('visible', !isOnline);
+            if(currentUser) ui.buttons.onlineMultiplayer.disabled = !isOnline;
+            if (!isOnline && gameMode === 'online') {
+                showAlert("Connection lost. Returning to the main menu.");
+                cleanupAndReset();
+            }
+        }
+
+        function cleanupAndReset() {
+            if (gameMode === 'online' && gameRef) {
+                fb.set(gameRef, null).catch(() => {});
+            }
+            if (gameListener) {
+                fb.off(gameRef, 'value', gameListener);
+            }
+            gameId = null;
+            gameRef = null;
+            gameListener = null;
+            playerRole = null;
+            localScore = { X: 0, O: 0, draws: 0 };
+            resetBoardUI();
+            updateScoreboard();
+            setState('MENU');
+        }
         
-        function startAIGame() { gameMode = 'ai'; localScore = { X: 0, O: 0, draws: 0 }; startNewRound(); }
-        function startNewRound() { resetBoardUI(); currentPlayer = 'X'; if(gameMode === 'ai') updateScoreboard(); setState('PLAYING'); }
-        function handleCellClick(e) { if (appState !== 'PLAYING') return; const index = parseInt(e.currentTarget.dataset.index); if (boardState[index] !== '') return; const myTurn = (gameMode === 'ai' && currentPlayer === 'X') || (gameMode === 'online' && currentPlayer === playerRole); if (!myTurn) return; if (gameMode === 'online') makeOnlineMove(index); else makeLocalMove(index); }
+        function startAIGame() {
+            gameMode = 'ai';
+            localScore = { X: 0, O: 0, draws: 0 };
+            startNewRound();
+        }
+
+        function startNewRound() {
+            resetBoardUI();
+            currentPlayer = 'X';
+            if(gameMode === 'ai') updateScoreboard();
+            setState('PLAYING');
+        }
+
+        function handleCellClick(e) {
+            if (appState !== 'PLAYING') return;
+            
+            const index = parseInt(e.currentTarget.dataset.index);
+            if (boardState[index] !== '') return;
+
+            const isMyTurn = (gameMode === 'ai' && currentPlayer === 'X') || (gameMode === 'online' && currentPlayer === playerRole);
+            if (!isMyTurn) return;
+
+            if (gameMode === 'online') {
+                makeOnlineMove(index);
+            } else {
+                makeLocalMove(index);
+            }
+        }
+
         async function makeLocalMove(index) {
-            boardState[index] = 'X'; updateBoardUI(); const winnerInfo = checkWinner(boardState); if (winnerInfo) { await endGame(winnerInfo); return; }
-            currentPlayer = 'O'; setState('PLAYING'); await new Promise(resolve => setTimeout(resolve, 600));
-            if (appState !== 'PLAYING' && appState !== 'ANIMATING_WIN') return;
-            const aiMoveIndex = getAIMove(boardState); boardState[aiMoveIndex] = 'O'; updateBoardUI();
-            const aiWinnerInfo = checkWinner(boardState); if (aiWinnerInfo) await endGame(aiWinnerInfo); else { currentPlayer = 'X'; setState('PLAYING'); }
+            boardState[index] = 'X';
+            updateBoardUI();
+            const winnerInfo = checkWinner(boardState);
+            if (winnerInfo) {
+                await endGame(winnerInfo);
+                return;
+            }
+
+            currentPlayer = 'O';
+            setState('PLAYING');
+            await new Promise(resolve => setTimeout(resolve, 600)); // AI thinking delay
+
+            if (appState !== 'PLAYING') return; // State might have changed during delay
+
+            const aiMoveIndex = getAIMove(boardState);
+            boardState[aiMoveIndex] = 'O';
+            updateBoardUI();
+
+            const aiWinnerInfo = checkWinner(boardState);
+            if (aiWinnerInfo) {
+                await endGame(aiWinnerInfo);
+            } else {
+                currentPlayer = 'X';
+                setState('PLAYING');
+            }
         }
         
         async function endGame(winnerInfo) {
-            setState('ANIMATING_WIN'); let message = '';
-            if (winnerInfo.winner !== 'tie') await drawWinningLine(winnerInfo.patternIndex); else await new Promise(res => setTimeout(res, 500));
-            if (winnerInfo.winner === 'tie') { message = "It's a Draw!"; if (gameMode === 'ai') localScore.draws++; else coinManager.add(ONLINE_GAME_COST); } else { if (gameMode === 'online') { message = winnerInfo.winner === playerRole ? 'You Win!' : 'You Lose!'; if (winnerInfo.winner === playerRole) coinManager.add(ONLINE_GAME_COST * 2); } else { message = `${winnerInfo.winner} Wins!`; if(winnerInfo.winner === 'X') localScore.X++; else localScore.O++; } }
+            setState('ANIMATING_WIN');
+            let message = '';
+            
+            if (winnerInfo.winner !== 'tie') {
+                await drawWinningLine(winnerInfo.patternIndex);
+            } else {
+                await new Promise(res => setTimeout(res, 500)); // Short delay for draws
+            }
+
+            if (winnerInfo.winner === 'tie') {
+                message = "It's a Draw!";
+                if (gameMode === 'ai') localScore.draws++;
+                else coinManager.add(ONLINE_GAME_COST); // Refund for draw
+            } else {
+                if (gameMode === 'online') {
+                    const isWinner = winnerInfo.winner === playerRole;
+                    message = isWinner ? 'You Win!' : 'You Lose!';
+                    if (isWinner) coinManager.add(ONLINE_GAME_COST * 2); // Win prize
+                } else { // AI mode
+                    message = `${winnerInfo.winner} Wins!`;
+                    if(winnerInfo.winner === 'X') localScore.X++; else localScore.O++;
+                }
+            }
+
             if(gameMode === 'ai') updateScoreboard();
-            ui.text.endMessage.textContent = message; ui.buttons.playAgain.querySelector('span').textContent = gameMode === 'ai' ? "Play Again" : "Request Rematch"; setState('GAME_OVER');
+
+            ui.text.endMessage.textContent = message;
+            ui.buttons.playAgain.querySelector('span').textContent = gameMode === 'ai' ? "Play Again" : "Request Rematch";
+            setState('GAME_OVER');
         }
         
-        function handlePlayAgain() { if (gameMode === 'online' && gameRef) { ui.buttons.playAgain.disabled = true; ui.text.rematchStatus.textContent = "Waiting for opponent..."; fb.update(gameRef, { [`players/${playerRole}/wantsRematch`]: true, status: 'REMATCH' }); } else { startNewRound(); } }
+        function handlePlayAgain() {
+            if (gameMode === 'online' && gameRef) {
+                ui.buttons.playAgain.disabled = true;
+                ui.text.rematchStatus.textContent = "Waiting for opponent...";
+                fb.update(gameRef, {
+                    [`players/${playerRole}/wantsRematch`]: true,
+                    status: 'REMATCH'
+                });
+            } else {
+                startNewRound();
+            }
+        }
 
-        function updateScoreboard(players) { const pX=(gameMode==='online'&&players)?players.X:profileManager.get();const pO=(gameMode==='online'&&players)?players.O:(gameMode==='ai'?{name:'AI',avatar:'avatar2'}:profileManager.get());if(pX){ui.score.playerXName.textContent=pX.name;ui.score.playerXAvatar.innerHTML=`<i class="${AVATARS[pX.avatar].icon}"></i>`;}ui.score.playerXValue.textContent=localScore.X;if(pO){ui.score.playerOName.textContent=pO.name;ui.score.playerOAvatar.innerHTML=`<i class="${AVATARS[pO.avatar].icon}"></i>`;}ui.score.playerOValue.textContent=localScore.O;ui.score.draws.textContent=`Draws: ${localScore.draws}`;}
-        function updateBoardUI(players) { const pXP=(gameMode==='online'&&players)?players.X:profileManager.get(); const pOP=(gameMode==='online'&&players)?players.O:null; boardState.forEach((mark, index) => { const cell = ui.cells[index]; if (mark && !cell.hasChildNodes()) { let profile, markerId, markerData; if(mark==='X'){profile=pXP;}else{profile=pOP;} if(profile){markerId=profile.markerX;if(mark==='O'){markerId=MARKERS[markerId]?.pair||'default_o';}}else{markerId=MARKERS[pXP.markerX]?.pair||'default_o';} markerData=MARKERS[markerId]; if(!markerData)return; cell.innerHTML = markerData.type==='text'?`<span class="mark">${markerData.content}</span>`:`<i class="mark custom-marker ${markerData.icon}"></i>`; cell.classList.add(mark.toLowerCase()); } }); }
-        function resetBoardUI() { boardState.fill(''); ui.winningLine.style.transform = 'scaleX(0)'; ui.cells.forEach(cell => { cell.innerHTML = ''; cell.classList.remove('x', 'o'); }); }
-        function drawWinningLine(pI) { return new Promise(r => { if (pI===null||pI===undefined){r();return;}const p=winPatterns[pI];const sC=ui.cells[p[0]];const eC=ui.cells[p[2]];const bR=ui.board.getBoundingClientRect();const sR=sC.getBoundingClientRect();const eR=eC.getBoundingClientRect();const sX=sR.left+sR.width/2-bR.left;const sY=sR.top+sR.height/2-bR.top;const eX=eR.left+eR.width/2-bR.left;const eY=eR.top+eR.height/2-bR.top;const a=Math.atan2(eY-sY,eX-sX)*180/Math.PI;const l=Math.hypot(eX-sX,eY-sY);ui.winningLine.style.width=`${l}px`;ui.winningLine.style.top=`${sY}px`;ui.winningLine.style.left=`${sX}px`;ui.winningLine.style.transform=`rotate(${a}deg) scaleX(1)`;ui.winningLine.addEventListener('transitionend',r,{once:true});});}
+        function updateScoreboard(players) {
+            const playerXProfile = (gameMode === 'online' && players) ? players.X : profileManager.get();
+            const playerOProfile = (gameMode === 'online' && players) ? players.O : {name: 'AI', avatar: 'avatar8'};
+
+            if(playerXProfile){
+                ui.score.playerXName.textContent = playerXProfile.name;
+                ui.score.playerXAvatar.innerHTML = `<i class="${AVATARS[playerXProfile.avatar].icon}"></i>`;
+            }
+            ui.score.playerXValue.textContent = localScore.X;
+            
+            if(playerOProfile){
+                ui.score.playerOName.textContent = playerOProfile.name;
+                ui.score.playerOAvatar.innerHTML = `<i class="${AVATARS[playerOProfile.avatar].icon}"></i>`;
+            }
+            ui.score.playerOValue.textContent = localScore.O;
+            ui.score.draws.textContent = `Draws: ${localScore.draws}`;
+        }
+        
+        function updateBoardUI(players) {
+            const playerXProfile = (gameMode === 'online' && players) ? players.X : profileManager.get();
+            const playerOProfile = (gameMode === 'online' && players) ? players.O : null;
+
+            const markerXId = playerXProfile.markerX;
+            const markerOId = playerOProfile ? MARKERS[playerOProfile.markerX]?.pair || 'default_o' : MARKERS[markerXId]?.pair || 'default_o';
+            
+            const markerXData = MARKERS[markerXId] || MARKERS['default'];
+            const markerOData = MARKERS[markerOId] || MARKERS['default_o'];
+
+            boardState.forEach((mark, index) => {
+                const cell = ui.cells[index];
+                if (mark && !cell.hasChildNodes()) {
+                    const markerData = (mark === 'X') ? markerXData : markerOData;
+                    if (!markerData) return;
+                    
+                    cell.innerHTML = markerData.type === 'text'
+                        ? `<span class="mark">${markerData.content}</span>`
+                        : `<i class="mark custom-marker ${markerData.icon}"></i>`;
+                    cell.classList.add(mark.toLowerCase());
+                }
+            });
+        }
+
+        function resetBoardUI() {
+            boardState.fill('');
+            ui.winningLine.style.transform = 'scaleX(0)';
+            ui.cells.forEach(cell => {
+                cell.innerHTML = '';
+                cell.classList.remove('x', 'o');
+            });
+        }
+
+        function drawWinningLine(patternIndex) {
+            return new Promise(resolve => {
+                if (patternIndex === null || patternIndex === undefined) { resolve(); return; }
+                const pattern = WIN_PATTERNS[patternIndex];
+                const startCell = ui.cells[pattern[0]];
+                const endCell = ui.cells[pattern[2]];
+                const boardRect = ui.board.getBoundingClientRect();
+                const startRect = startCell.getBoundingClientRect();
+                const endRect = endCell.getBoundingClientRect();
+
+                const startX = startRect.left + startRect.width / 2 - boardRect.left;
+                const startY = startRect.top + startRect.height / 2 - boardRect.top;
+                const endX = endRect.left + endRect.width / 2 - boardRect.left;
+                const endY = endRect.top + endRect.height / 2 - boardRect.top;
+
+                const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+                const length = Math.hypot(endX - startX, endY - startY);
+
+                ui.winningLine.style.width = `${length}px`;
+                ui.winningLine.style.top = `${startY}px`;
+                ui.winningLine.style.left = `${startX}px`;
+                ui.winningLine.style.transform = `rotate(${angle}deg) scaleX(1)`;
+                ui.winningLine.addEventListener('transitionend', resolve, { once: true });
+            });
+        }
 
         // --- ONLINE LOGIC (Now with Auth) ---
         async function createOnlineGame() {
-            if (!currentUser) return showAlert("Not authenticated. Please wait."); if (coinManager.get() < ONLINE_GAME_COST) return showAlert(`You need ${ONLINE_GAME_COST} coins.`); coinManager.add(-ONLINE_GAME_COST);
-            gameMode = 'online'; playerRole = 'X'; gameId = Math.random().toString(36).substring(2, 8).toUpperCase(); gameRef = fb.ref(database, 'games/' + gameId);
+            if (!currentUser) return showAlert("Authentication required. Please wait or refresh.");
+            if (coinManager.get() < ONLINE_GAME_COST) return showAlert(`You need ${ONLINE_GAME_COST} coins to play online.`);
+            
+            coinManager.add(-ONLINE_GAME_COST);
+            gameMode = 'online';
+            playerRole = 'X';
+            gameId = Math.random().toString(36).substring(2, 8).toUpperCase();
+            gameRef = fb.ref(database, 'games/' + gameId);
             ui.text.gameId.textContent = gameId;
+
             const profile = profileManager.get();
-            profile.uid = currentUser.uid; // *** Attach secure user ID ***
-            const newGame = { board: Array(9).fill(''), currentPlayer: 'X', status: 'WAITING', players: { X: profile }, score: { X: 0, O: 0, draws: 0 }, };
-            try { await fb.set(gameRef, newGame); await fb.onDisconnect(gameRef).remove(); setState('LOBBY_WAITING'); listenToGameUpdates(); } catch (error) { coinManager.add(ONLINE_GAME_COST); showAlert("Error creating game."); cleanupAndReset(); }
+            profile.uid = currentUser.uid; // Attach secure user ID
+            
+            const newGame = {
+                board: Array(9).fill(''),
+                currentPlayer: 'X',
+                status: 'WAITING',
+                players: { X: profile },
+                score: { X: 0, O: 0, draws: 0 },
+            };
+
+            try {
+                await fb.set(gameRef, newGame);
+                await fb.onDisconnect(gameRef).remove(); // Clean up if creator disconnects
+                setState('LOBBY_WAITING');
+                listenToGameUpdates();
+            } catch (error) {
+                console.error("Error creating game:", error);
+                coinManager.add(ONLINE_GAME_COST); // Refund
+                showAlert("Error creating game. Please try again.");
+                cleanupAndReset();
+            }
         }
+
         async function joinOnlineGame() {
-            if (!currentUser) return showAlert("Not authenticated. Please wait."); if (coinManager.get() < ONLINE_GAME_COST) return showAlert(`You need ${ONLINE_GAME_COST} coins.`);
-            const enteredId = document.getElementById('game-id-input').value.trim().toUpperCase(); if (!enteredId) return showAlert('Please enter a Game ID.');
-            gameRef = fb.ref(database, 'games/' + enteredId); const snapshot = await fb.get(gameRef);
-            if (!snapshot.exists() || snapshot.val().players.O) return showAlert('Game not found or is full.');
-            coinManager.add(-ONLINE_GAME_COST); gameId = enteredId; gameMode = 'online'; playerRole = 'O';
+            if (!currentUser) return showAlert("Authentication required. Please wait or refresh.");
+            if (coinManager.get() < ONLINE_GAME_COST) return showAlert(`You need ${ONLINE_GAME_COST} coins to play online.`);
+            
+            const enteredId = document.getElementById('game-id-input').value.trim().toUpperCase();
+            if (!enteredId) return showAlert('Please enter a valid Game ID.');
+
+            gameRef = fb.ref(database, 'games/' + enteredId);
+            const snapshot = await fb.get(gameRef);
+
+            if (!snapshot.exists() || snapshot.val().players.O) {
+                return showAlert('Game not found or is already full.');
+            }
+            
+            coinManager.add(-ONLINE_GAME_COST);
+            gameId = enteredId;
+            gameMode = 'online';
+            playerRole = 'O';
+
             const profile = profileManager.get();
-            profile.uid = currentUser.uid; // *** Attach secure user ID ***
+            profile.uid = currentUser.uid; // Attach secure user ID
+
             const playerOPath = `games/${gameId}/players/O`;
             try {
                 await fb.update(gameRef, { 'players/O': profile, status: 'PLAYING' });
-                await fb.onDisconnect(fb.ref(database, playerOPath)).remove();
+                await fb.onDisconnect(fb.ref(database, playerOPath)).remove(); // Clean up if joiner disconnects
                 listenToGameUpdates();
             } catch (error) {
-                coinManager.add(ONLINE_GAME_COST);
-                showAlert("Error joining game.");
+                console.error("Error joining game:", error);
+                coinManager.add(ONLINE_GAME_COST); // Refund
+                showAlert("Error joining game. Please try again.");
                 cleanupAndReset();
             }
         }
         
         function listenToGameUpdates() {
-            if (!gameRef) return; gameListener = fb.onValue(gameRef, (snapshot) => {
-                if (!snapshot.exists()) { if (appState !== 'MENU') showAlert("The game has been terminated."); cleanupAndReset(); return; }
+            if (!gameRef) return;
+            gameListener = fb.onValue(gameRef, (snapshot) => {
+                if (!snapshot.exists()) {
+                    if (appState !== 'MENU') showAlert("The game has been terminated by the host.");
+                    cleanupAndReset();
+                    return;
+                }
+                
                 const gameState = snapshot.val();
-                if (gameState.players && !gameState.players[playerRole] && gameState.status !== 'WAITING') { showAlert("The other player has left."); coinManager.add(ONLINE_GAME_COST); cleanupAndReset(); return; }
-                boardState = gameState.board; currentPlayer = gameState.currentPlayer; localScore = gameState.score;
-                updateScoreboard(gameState.players); updateBoardUI(gameState.players);
+                if (gameState.players && !gameState.players[playerRole] && gameState.status !== 'WAITING') {
+                    showAlert("The other player has left the game.");
+                    coinManager.add(ONLINE_GAME_COST); // Refund
+                    cleanupAndReset();
+                    return;
+                }
+
+                boardState = gameState.board;
+                currentPlayer = gameState.currentPlayer;
+                localScore = gameState.score;
+                updateScoreboard(gameState.players);
+                updateBoardUI(gameState.players);
+                
                 switch (gameState.status) {
-                    case 'WAITING': setState('LOBBY_WAITING'); break;
-                    case 'PLAYING': if (appState !== 'PLAYING') resetBoardUI(); setState('PLAYING'); break;
-                    case 'FINISHED': if (appState === 'PLAYING') endGame(checkWinner(boardState, gameState.players)); break;
-                    case 'REMATCH': setState('GAME_OVER'); handleRematchState(gameState); break;
+                    case 'WAITING':
+                        setState('LOBBY_WAITING');
+                        break;
+                    case 'PLAYING':
+                        if (appState !== 'PLAYING') resetBoardUI();
+                        setState('PLAYING');
+                        break;
+                    case 'FINISHED':
+                        if (appState === 'PLAYING') endGame(checkWinner(boardState, gameState.players));
+                        break;
+                    case 'REMATCH':
+                        setState('GAME_OVER');
+                        handleRematchState(gameState);
+                        break;
                 }
             });
         }
-        function makeOnlineMove(index) { fb.get(gameRef).then((snapshot) => { if (!snapshot.exists()) return; const gameState = snapshot.val(); if (gameState.board[index] !== '') return; const tempBoard = [...gameState.board]; tempBoard[index] = playerRole; const nextPlayer = playerRole === 'X' ? 'O' : 'X'; const winnerInfo = checkWinner(tempBoard, gameState.players); let updateData = { board: tempBoard, currentPlayer: nextPlayer }; if (winnerInfo) { const newScore = { ...gameState.score }; if (winnerInfo.winner === 'tie') newScore.draws++; else newScore[winnerInfo.winner]++; updateData = {...updateData, status: 'FINISHED', score: newScore }; } fb.update(gameRef, updateData); }); }
-        function handleRematchState(gameState) { ui.buttons.playAgain.disabled = false; ui.text.rematchStatus.textContent = ""; const pX = gameState.players.X; const pO = gameState.players.O; if (pX && pX.wantsRematch && pO && pO.wantsRematch) { if (playerRole === 'X') { fb.update(gameRef, { board: Array(9).fill(''), currentPlayer: 'X', status: 'PLAYING', 'players/X/wantsRematch': null, 'players/O/wantsRematch': null, }); } } else { const myRematchRequest = gameState.players[playerRole]?.wantsRematch; ui.buttons.playAgain.disabled = myRematchRequest; ui.text.rematchStatus.textContent = myRematchRequest ? "Waiting for opponent..." : "Opponent wants a rematch!"; } }
+
+        function makeOnlineMove(index) {
+            fb.get(gameRef).then((snapshot) => {
+                if (!snapshot.exists()) return;
+                
+                const gameState = snapshot.val();
+                if (gameState.board[index] !== '') return;
+
+                const newBoard = [...gameState.board];
+                newBoard[index] = playerRole;
+                const nextPlayer = playerRole === 'X' ? 'O' : 'X';
+                
+                const winnerInfo = checkWinner(newBoard, gameState.players);
+                let updateData = { board: newBoard, currentPlayer: nextPlayer };
+                
+                if (winnerInfo) {
+                    const newScore = { ...gameState.score };
+                    if (winnerInfo.winner === 'tie') newScore.draws++;
+                    else newScore[winnerInfo.winner]++;
+                    updateData = { ...updateData, status: 'FINISHED', score: newScore };
+                }
+                
+                fb.update(gameRef, updateData);
+            });
+        }
+
+        function handleRematchState(gameState) {
+            ui.buttons.playAgain.disabled = false;
+            ui.text.rematchStatus.textContent = "";
+            const playerX = gameState.players.X;
+            const playerO = gameState.players.O;
+
+            if (playerX?.wantsRematch && playerO?.wantsRematch) {
+                // Host (Player X) resets the game board for the new round
+                if (playerRole === 'X') {
+                    fb.update(gameRef, {
+                        board: Array(9).fill(''),
+                        currentPlayer: 'X',
+                        status: 'PLAYING',
+                        'players/X/wantsRematch': null,
+                        'players/O/wantsRematch': null,
+                    });
+                }
+            } else {
+                const myRematchRequest = gameState.players[playerRole]?.wantsRematch;
+                ui.buttons.playAgain.disabled = myRematchRequest;
+                ui.text.rematchStatus.textContent = myRematchRequest
+                    ? "Waiting for opponent..."
+                    : "Opponent wants a rematch!";
+            }
+        }
 
         // --- AI & Game Logic Helpers ---
-        function getAIMove(board) { const eC=[];board.forEach((c,i)=>{if(c==='')eC.push(i);});if(aiDifficulty==='easy'||(aiDifficulty==='medium'&&Math.random()<0.5))return eC[Math.floor(Math.random()*eC.length)];return findBestMove(board);}
-        function findBestMove(board) { let bestScore=-Infinity;let move=-1;for(let i=0;i<board.length;i++){if(board[i]===''){board[i]='O';let score=minimax(board,0,false);board[i]='';if(score>bestScore){bestScore=score;move=i;}}}return move;}
-        function minimax(board,depth,isMax){const scores={'X':-10,'O':10,'tie':0};let result=checkWinner(board);if(result)return scores[result.winner];let bestScore=isMax?-Infinity:Infinity;for(let i=0;i<board.length;i++){if(board[i]===''){board[i]=isMax?'O':'X';let score=minimax(board,depth+1,!isMax);board[i]='';bestScore=isMax?Math.max(score,bestScore):Math.min(score,bestScore);}}return bestScore;}
-        function checkWinner(board, players) { for(let i=0;i<winPatterns.length;i++){const[a,b,c]=winPatterns[i];if(board[a]&&board[a]===board[b]&&board[a]===board[c]){return{winner:board[a],patternIndex:i,players};}}if(!board.includes(''))return{winner:'tie',patternIndex:null,players};return null;}
+        function getAIMove(board) {
+            const emptyCells = [];
+            board.forEach((cell, index) => { if (cell === '') emptyCells.push(index); });
+
+            if (aiDifficulty === 'easy' || (aiDifficulty === 'medium' && Math.random() < 0.5)) {
+                return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            }
+            // Hard difficulty uses minimax
+            return findBestMove(board);
+        }
+
+        function findBestMove(board) {
+            let bestScore = -Infinity;
+            let move = -1;
+            for (let i = 0; i < board.length; i++) {
+                if (board[i] === '') {
+                    board[i] = 'O'; // AI is 'O'
+                    let score = minimax(board, 0, false);
+                    board[i] = '';
+                    if (score > bestScore) {
+                        bestScore = score;
+                        move = i;
+                    }
+                }
+            }
+            return move;
+        }
+
+        function minimax(board, depth, isMaximizing) {
+            const scores = { 'X': -10, 'O': 10, 'tie': 0 };
+            const result = checkWinner(board);
+            if (result) return scores[result.winner];
+
+            let bestScore = isMaximizing ? -Infinity : Infinity;
+            for (let i = 0; i < board.length; i++) {
+                if (board[i] === '') {
+                    board[i] = isMaximizing ? 'O' : 'X';
+                    let score = minimax(board, depth + 1, !isMaximizing);
+                    board[i] = '';
+                    bestScore = isMaximizing ? Math.max(score, bestScore) : Math.min(score, bestScore);
+                }
+            }
+            return bestScore;
+        }
+
+        function checkWinner(board, players) {
+            for(let i = 0; i < WIN_PATTERNS.length; i++){
+                const [a, b, c] = WIN_PATTERNS[i];
+                if (board[a] && board[a] === board[b] && board[a] === board[c]){
+                    return { winner: board[a], patternIndex: i, players };
+                }
+            }
+            if (!board.includes('')) {
+                return { winner: 'tie', patternIndex: null, players };
+            }
+            return null;
+        }
         
         // --- Initialize App ---
         initializeGameUI();
-        initializeAuth(); // Start the authentication process
+        initializeAuth();
     };
     </script>
 </body>
-</html>
+    </html>
